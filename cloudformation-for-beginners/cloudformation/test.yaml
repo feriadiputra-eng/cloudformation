@@ -227,7 +227,7 @@ Resources:
   rds:
     Type: AWS::RDS::DBInstance
     Properties:
-      Engine: "mysql"
+      Engine: "mariadb"
       DBInstanceIdentifier: "DB-my-sql"
       DBInstanceClass: "db.t3micro"
       MasterUsername: "admin"
