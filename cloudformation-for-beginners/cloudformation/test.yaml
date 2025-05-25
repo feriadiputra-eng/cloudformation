@@ -227,13 +227,14 @@ Resources:
   rds:
     Type: AWS::RDS::DBInstance
     Properties:
-      Engine: "mariadb"
+      Engine: "mysql"
       DBInstanceIdentifier: "DB-my-sql"
-      DBInstanceClass: "db.t3micro"
+      DBInstanceClass: "db.t3.micro"
       MasterUsername: "admin"
       MasterUserPassword: "feriadiadmin"
-      MaxAllocatedStorage: 20
+      AllocatedStorage: "20"
       StorageType: "gp2"
       VPCSecurityGroups: [!Ref Sgrds]
-      PubliclyAccessible: "false"
+      PubliclyAccessible: false
       DBSubnetGroupName: !Ref subnetrds
+      DeletionProtection: false
