@@ -1,0 +1,229 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Try to create
+
+Resources:
+  vpctest:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "172.10.0.0/16"
+      Tags:
+        - Key: Name
+          Value: VPC
+
+  sub1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.0.0/27
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: sub-pub-a
+
+  sub2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.0.32/27
+      AvailabilityZone: us-east-1B
+      Tags:
+        - Key: Name
+          Value: sub-pub-b
+
+  sub3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.1.0/26
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: sub-priv-a
+
+  sub4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.1.64/26
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: sub-priv-b
+
+  sub5:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.2.0/26
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: sub-priv-rds-a
+
+  sub6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref vpctest
+      CidrBlock: 172.10.2.64/26
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: sub-priv-rds-b
+
+  vpcigw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: testigw
+
+  vpceip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  vpcnat:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt vpceip.AllocationId
+      SubnetId: !Ref sub1
+
+  vpcattachigw:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref vpctest
+
+  vptrtpub:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref vpctest
+
+  vpcrtpriv:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref vpctest
+
+  rtasosisationpub:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vptrtpub
+      SubnetId:
+        - !Ref sub1
+        - !Ref sub2
+
+  rtasosisationpriv:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vpcrtpriv
+      SubnetId:
+        - !Ref sub3
+        - !Ref sub4
+        - !Ref sub5
+        - !Ref sub6
+
+  routepub:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref vptrtpub
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref vpcigw
+
+  routepriv:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref vpcrtpriv
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref vpcnat
+
+  Sgbastionhost:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for bastion host"
+      GroupName: "sgbastionhost"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  Sg-rds:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for rds"
+      GroupName: "sgrds"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: !Ref Sg-app1
+
+  Sg-app1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for app1"
+      GroupName: "sgapp1"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 1717
+          ToPort: 1717
+          CidrIp: !Ref sglb
+
+  Sglb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for lb"
+      GroupName: "sglb"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  bastionhost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0953476d60561c955
+      InstanceType: t2.micro
+      NetworkInterface:
+        - AssociatePublicIpAddress: "True"
+          Device Index: 0
+          SubnetId: !Ref sub1
+
+  subnetrds:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS instance"
+      DBSubnetGroupName: "subnetrds"
+      SubnetIds:
+        - !Ref sub5
+        - !Ref sub6
+
+  rds:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: "mysql"
+      DBInstanceIdentifier: "DB-my-sql"
+      DBInstanceClass: "db.t3micro"
+      MasterUsername: "admin"
+      MasterUserPassword: "feriadiadmin"
+      MaxAllocatedStorage: 20
+      StorageType: "gp2"
+      VPCSecurityGroups: [!Ref Sg-rds:]
+      PubliclyAccessible: "false"
+      DBSubnetGroupName: !Ref subnetrds
+
+  S3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-afes53dg4v
+      PublicAccessBlockConfiguration:
+        - BlockPublicAcls: true
+        - BlockPublicPolicy: true
+        - IgnorePublicAcls: true
+        - RestrictPublicBuckets: true
+      VersioningConfiguration:
+        - Status: "Enabled"
