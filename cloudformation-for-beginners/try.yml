@@ -25,7 +25,7 @@ Resources:
     Properties:
       VpcId: !Ref vpctest
       CidrBlock: 172.10.0.32/27
-      AvailabilityZone: us-east-1B
+      AvailabilityZone: us-east-1b
       Tags:
         - Key: Name
           Value: sub-pub-b
@@ -92,6 +92,7 @@ Resources:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref vpctest
+      InternetGatewayId: !Ref vpcigw
 
   vptrtpub:
     Type: AWS::EC2::RouteTable
@@ -103,23 +104,41 @@ Resources:
     Properties:
       VpcId: !Ref vpctest
 
-  rtasosisationpub:
+  rtasosisationpub1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref vptrtpub
-      SubnetId:
-        - !Ref sub1
-        - !Ref sub2
+      SubnetId: !Ref sub1
 
-  rtasosisationpriv:
+  rtasosisationpub2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vptrtpub
+      SubnetId: !Ref sub2
+
+  rtasosisationpriv1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref vpcrtpriv
-      SubnetId:
-        - !Ref sub3
-        - !Ref sub4
-        - !Ref sub5
-        - !Ref sub6
+      SubnetId: !Ref sub3
+
+  rtasosisationpriv2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vpcrtpriv
+      SubnetId: !Ref sub4
+
+  rtasosisationpriv3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vpcrtpriv
+      SubnetId: !Ref sub5
+
+  rtasosisationpriv4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref vpcrtpriv
+      SubnetId: !Ref sub6
 
   routepub:
     Type: AWS::EC2::Route
@@ -133,7 +152,7 @@ Resources:
     Properties:
       RouteTableId: !Ref vpcrtpriv
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref vpcnat
+      NatGatewayId: !Ref vpcnat
 
   Sgbastionhost:
     Type: AWS::EC2::SecurityGroup
@@ -212,7 +231,7 @@ Resources:
       MasterUserPassword: "feriadiadmin"
       MaxAllocatedStorage: 20
       StorageType: "gp2"
-      VPCSecurityGroups: [!Ref Sg-rds:]
+      VPCSecurityGroups: !Ref Sg-rds
       PubliclyAccessible: "false"
       DBSubnetGroupName: !Ref subnetrds
 

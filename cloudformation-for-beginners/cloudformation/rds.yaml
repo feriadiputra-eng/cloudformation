@@ -1,0 +1,22 @@
+  subnetrds:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS instance"
+      DBSubnetGroupName: "subnetrds"
+      SubnetIds:
+        - !Ref sub5
+        - !Ref sub6
+
+  rds:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: "mysql"
+      DBInstanceIdentifier: "DB-my-sql"
+      DBInstanceClass: "db.t3micro"
+      MasterUsername: "admin"
+      MasterUserPassword: "feriadiadmin"
+      MaxAllocatedStorage: 20
+      StorageType: "gp2"
+      VPCSecurityGroups: !Ref Sg-rds
+      PubliclyAccessible: "false"
+      DBSubnetGroupName: !Ref subnetrds

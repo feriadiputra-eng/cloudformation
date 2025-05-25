@@ -1,0 +1,60 @@
+  Sgbastionhost:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for bastion host"
+      GroupName: "sgbastionhost"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  Sglb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for lb"
+      GroupName: "sglb"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  Sgapp1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for app1"
+      GroupName: "sgapp1"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 1717
+          ToPort: 1717
+          SourceSecurityGroupId: !Ref Sglb
+
+  Sgrds:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for rds"
+      GroupName: "sgrds"
+      VpcId: !Ref vpctest
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref Sgapp1
+
+  bastionhost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0953476d60561c955
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "True"
+          SubnetId: !Ref sub1
+          DeleteOnTermination: "True"
+          DeviceIndex: 0
+          GroupSet: 
+            - !Ref Sgbastionhost
